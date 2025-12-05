@@ -14,13 +14,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Content and sessionId are required" });
       }
 
-      // Get previous conversation history for context
-      const previousMessages = await storage.getMessagesBySession(sessionId);
-      const conversationHistory = previousMessages.map((msg) => ({
-        role: (msg.isUser === "true" ? "user" : "assistant") as "user" | "assistant",
-        content: msg.content
-      }));
-
       // Save user message
       const userMessage = await storage.createMessage({
         content,
@@ -28,10 +21,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionId,
       });
 
-      // Get response from OpenAI agent with conversation history
+      // Get response from OpenAI agent
       const agentResponse = await runWorkflow({ 
-        input_as_text: content,
-        conversationHistory 
+        input_as_text: content
       });
 
       // Save bot response
