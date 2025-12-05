@@ -110,7 +110,14 @@ Only classify as Internal if **Spice World** is one of them.
 
 const internalQA = new Agent({
   name: "Internal Q&A",
-  instructions: "Answer the user's question using the knowledge tools you have on hand (file or web search). Be concise and answer succinctly, using bullet points and summarizing the answer up front",
+  instructions: `Answer the user's question using the knowledge tools you have on hand (file or web search). Be concise and answer succinctly, using bullet points and summarizing the answer up front.
+
+IMPORTANT: When the user asks WHERE to find information (e.g., "where can I find this?", "what document?", "which page?"), you MUST provide:
+- The exact document name
+- The specific page number(s)
+- Example: "You can find this information in the Employee Handbook, page 12"
+
+Otherwise, just answer the question directly without citing sources.`,
   model: "gpt-4.1-nano",
   tools: [
     fileSearch
@@ -128,7 +135,13 @@ const externalFactFinding = new Agent({
   instructions: `Explore external information using the tools you have (web search, file search, code interpreter). 
 Analyze any relevant data, checking your work.
 
-Make sure to output a concise answer followed by summarized bullet point of supporting evidence`,
+Make sure to output a concise answer followed by summarized bullet point of supporting evidence.
+
+IMPORTANT: When the user asks WHERE to find information (e.g., "where can I find this?", "what's the source?", "which website?"), you MUST provide:
+- The exact website URL or link where the information was found
+- Example: "You can find this information at https://example.com/page"
+
+Otherwise, just answer the question directly without citing sources.`,
   model: "gpt-5-nano",
   tools: [
     webSearchPreview,
