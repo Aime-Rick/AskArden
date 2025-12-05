@@ -155,14 +155,32 @@ const agent = new Agent({
   }
 });
 
-type WorkflowInput = { input_as_text: string };
+type WorkflowInput = { 
+  input_as_text: string;
+  conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
+};
 
 // Main code entrypoint
 export const runWorkflow = async (workflow: WorkflowInput): Promise<string> => {
   return await withTrace("Ask Arden", async () => {
-    const conversationHistory: AgentInputItem[] = [
+    // Build conversation history from previous messages
+    const conversationHistory: AgentInputItem[] = [];
+    
+    if (workflow.conversationHistory && workflow.conversationHistory.length > 0) {
+      // Add previous conversation context (limit to last 10 messages to avoid token limits)
+      const recentHistory = workflow.conversationHistory.slice(-10);
+      for (const msg of recentHistory) {
+        conversationHistory.push({
+          role: msg.role,
+          content: [{ type: "input_text", text: msg.content }]
+        });
+      }
+    }
+    
+    // Add current user message
+    conversationHistory.push(
       { role: "user", content: [{ type: "input_text", text: workflow.input_as_text }] }
-    ];
+    );
     
     const runner = new Runner({
       traceMetadata: {
