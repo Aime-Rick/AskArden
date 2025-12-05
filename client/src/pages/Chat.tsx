@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import ChatHeader from "@/components/ChatHeader";
 import MessageBubble from "@/components/MessageBubble";
 import TypingIndicator from "@/components/TypingIndicator";
@@ -14,45 +14,41 @@ interface Message {
   timestamp: string;
 }
 
-interface MessageResponse {
-  userMessage: Message;
-  botMessage: Message;
+interface AgentResponse {
+  response: string;
 }
 
-// Get or create session ID from localStorage
-const getSessionId = () => {
-  let sessionId = localStorage.getItem('askArdenSessionId');
-  if (!sessionId) {
-    sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    localStorage.setItem('askArdenSessionId', sessionId);
+const STORAGE_KEY = 'askArdenMessages';
+
+// Load messages from sessionStorage
+const loadMessages = (): Message[] => {
+  try {
+    const stored = sessionStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error('Error loading messages from sessionStorage:', error);
+    return [];
   }
-  return sessionId;
+};
+
+// Save messages to sessionStorage
+const saveMessages = (messages: Message[]) => {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+  } catch (error) {
+    console.error('Error saving messages to sessionStorage:', error);
+  }
 };
 
 export default function Chat() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [sessionId] = useState(getSessionId);
+  const [messages, setMessages] = useState<Message[]>(loadMessages);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Load message history on mount
-  const { data: historyData } = useQuery({
-    queryKey: ['/api/messages', sessionId],
-    queryFn: async () => {
-      const response = await fetch(`/api/messages/${sessionId}`);
-      if (!response.ok) {
-        throw new Error('Failed to load message history');
-      }
-      return await response.json() as Message[];
-    },
-  });
-
-  // Update messages when history is loaded
+  // Save messages to sessionStorage whenever they change
   useEffect(() => {
-    if (historyData) {
-      setMessages(historyData);
-    }
-  }, [historyData]);
+    saveMessages(messages);
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -64,33 +60,33 @@ export default function Chat() {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
-      const response = await fetch("/api/messages", {
+      const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          content,
-          sessionId,
-        }),
+        body: JSON.stringify({ message: content }),
       });
       
       if (!response.ok) {
-        throw new Error("Failed to send message");
+        throw new Error("Failed to get agent response");
       }
       
-      return await response.json() as MessageResponse;
+      return await response.json() as AgentResponse;
     },
-    onSuccess: (data) => {
-      // Remove the optimistic user message and add real messages from server
-      setMessages((prev) => {
-        const withoutTemp = prev.filter(msg => !msg.id.startsWith('temp-'));
-        return [...withoutTemp, data.userMessage, data.botMessage];
-      });
+    onSuccess: (data, userContent) => {
+      // Add bot message with agent response
+      const botMessage: Message = {
+        id: `bot-${Date.now()}`,
+        content: data.response,
+        isUser: false,
+        timestamp: new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, botMessage]);
     },
     onError: (error) => {
-      // Remove failed optimistic message
-      setMessages((prev) => prev.filter(msg => !msg.id.startsWith('temp-')));
+      // Remove failed optimistic user message
+      setMessages((prev) => prev.slice(0, -1));
       
       toast({
         title: "Erreur",
@@ -102,16 +98,16 @@ export default function Chat() {
   });
 
   const handleSendMessage = (text: string) => {
-    // Optimistically add user message
+    // Add user message immediately
     const userMessage: Message = {
-      id: `temp-${Date.now()}`,
+      id: `user-${Date.now()}`,
       content: text,
       isUser: true,
       timestamp: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, userMessage]);
     
-    // Send to backend
+    // Get agent response
     sendMessageMutation.mutate(text);
   };
 
