@@ -201,8 +201,6 @@ export const runWorkflow = async (workflow: WorkflowInput): Promise<string> => {
         }
       ]
     );
-    
-    conversationHistory.push(...classifyResultTemp.newItems.map((item) => item.rawItem));
 
     if (!classifyResultTemp.finalOutput) {
       throw new Error("Agent result is undefined");
@@ -219,7 +217,6 @@ export const runWorkflow = async (workflow: WorkflowInput): Promise<string> => {
         internalQA,
         [...conversationHistory]
       );
-      conversationHistory.push(...internalQAResultTemp.newItems.map((item) => item.rawItem));
 
       if (!internalQAResultTemp.finalOutput) {
         throw new Error("Agent result is undefined");
@@ -231,7 +228,6 @@ export const runWorkflow = async (workflow: WorkflowInput): Promise<string> => {
         externalFactFinding,
         [...conversationHistory]
       );
-      conversationHistory.push(...externalFactFindingResultTemp.newItems.map((item) => item.rawItem));
 
       if (!externalFactFindingResultTemp.finalOutput) {
         throw new Error("Agent result is undefined");
@@ -243,7 +239,6 @@ export const runWorkflow = async (workflow: WorkflowInput): Promise<string> => {
         agent,
         [...conversationHistory]
       );
-      conversationHistory.push(...agentResultTemp.newItems.map((item) => item.rawItem));
 
       if (!agentResultTemp.finalOutput) {
         throw new Error("Agent result is undefined");
