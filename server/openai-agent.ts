@@ -110,14 +110,25 @@ Only classify as Internal if **Spice World** is one of them.
 
 const internalQA = new Agent({
   name: "Internal Q&A",
-  instructions: `Answer the user's question using the knowledge tools you have on hand (file or web search). Be concise and answer succinctly, using bullet points and summarizing the answer up front.
+  instructions: `You are an assistant for Spice World company. Your role is to answer questions using the internal knowledge base (file search).
 
-IMPORTANT: When the user asks WHERE to find information (e.g., "where can I find this?", "what document?", "which page?"), you MUST provide:
-- The exact document name
-- The specific page number(s)
-- Example: "You can find this information in the Employee Handbook, page 12"
+CRITICAL: You MUST search the internal documents FIRST before answering.
 
-Otherwise, just answer the question directly without citing sources.`,
+If you find relevant information in the internal documents:
+- Answer the question using that information
+- Be concise and answer succinctly, using bullet points when appropriate
+- When the user asks WHERE to find information, provide the exact document name and page number
+
+If the question is too vague or unclear to search effectively:
+- Respond EXACTLY with: "NEEDS_CLARIFICATION"
+- Do NOT try to answer
+
+If you DO NOT find relevant information in the internal documents:
+- Respond EXACTLY with: "NO_INTERNAL_INFO_FOUND"
+- Do NOT try to answer from your general knowledge
+- Do NOT make up information
+
+This is critical: Use the special responses "NEEDS_CLARIFICATION" or "NO_INTERNAL_INFO_FOUND" so the system can handle the query appropriately.`,
   model: "gpt-4.1-nano",
   tools: [
     fileSearch
@@ -157,8 +168,17 @@ Otherwise, just answer the question directly without citing sources.`,
 });
 
 const agent = new Agent({
-  name: "Agent",
-  instructions: "Ask the user to provide more detail so you can help them by either answering their question or running data analysis relevant to their query",
+  name: "Clarification Agent",
+  instructions: `You are a helpful assistant that asks for clarification when user questions are too vague or ambiguous.
+
+Your role:
+- Ask the user to provide more specific details about what they're looking for
+- Suggest what additional information would help answer their question
+- Be polite and helpful in guiding them to ask a more specific question
+
+Examples:
+- If they ask "Tell me about products", ask "Which products are you interested in? I can help with product details, pricing, or availability."
+- If they ask "What about policies?", ask "Which policy would you like to know about? For example: return policy, privacy policy, or shipping policy?"`,
   model: "gpt-4.1-nano",
   modelSettings: {
     temperature: 1,
@@ -170,15 +190,38 @@ const agent = new Agent({
 
 type WorkflowInput = { 
   input_as_text: string;
+  history?: Array<{ content: string; isUser: boolean }>;
 };
 
 // Main code entrypoint
 export const runWorkflow = async (workflow: WorkflowInput): Promise<string> => {
   return await withTrace("Ask Arden", async () => {
-    // Build conversation history with current user message
-    const conversationHistory: AgentInputItem[] = [
-      { role: "user", content: [{ type: "input_text", text: workflow.input_as_text }] }
-    ];
+    // Build conversation history from previous messages
+    const conversationHistory: AgentInputItem[] = [];
+    
+    if (workflow.history && workflow.history.length > 0) {
+      // Add previous messages to conversation history
+      for (const msg of workflow.history) {
+        if (msg.isUser) {
+          conversationHistory.push({
+            role: "user",
+            content: [{ type: "input_text", text: msg.content }]
+          });
+        } else {
+          conversationHistory.push({
+            role: "assistant",
+            status: "completed",
+            content: [{ type: "output_text", text: msg.content }]
+          });
+        }
+      }
+    }
+    
+    // Add current user message
+    conversationHistory.push({
+      role: "user",
+      content: [{ type: "input_text", text: workflow.input_as_text }]
+    });
     
     const runner = new Runner({
       traceMetadata: {
@@ -187,41 +230,34 @@ export const runWorkflow = async (workflow: WorkflowInput): Promise<string> => {
       }
     });
 
-    const classifyResultTemp = await runner.run(
-      classify,
-      [
-        ...conversationHistory,
-        {
-          role: "user",
-          content: [
-            { type: "input_text", text: `Question: ${workflow.input_as_text}` }
-          ]
-        }
-      ]
+    // Step 1: Always try internal Q&A first
+    const internalQAResultTemp = await runner.run(
+      internalQA,
+      [...conversationHistory]
     );
 
-    if (!classifyResultTemp.finalOutput) {
+    if (!internalQAResultTemp.finalOutput) {
       throw new Error("Agent result is undefined");
     }
 
-    const classifyResult = {
-      output_parsed: classifyResultTemp.finalOutput
-    };
+    const internalResponse = internalQAResultTemp.finalOutput.trim();
 
-    let finalResponse = "";
-
-    if (classifyResult.output_parsed.operating_procedure === "q-and-a") {
-      const internalQAResultTemp = await runner.run(
-        internalQA,
+    // Step 2: If clarification needed, ask for more details
+    if (internalResponse === "NEEDS_CLARIFICATION") {
+      const clarificationResultTemp = await runner.run(
+        agent,
         [...conversationHistory]
       );
 
-      if (!internalQAResultTemp.finalOutput) {
+      if (!clarificationResultTemp.finalOutput) {
         throw new Error("Agent result is undefined");
       }
 
-      finalResponse = internalQAResultTemp.finalOutput;
-    } else if (classifyResult.output_parsed.operating_procedure === "fact-finding") {
+      return clarificationResultTemp.finalOutput;
+    }
+
+    // Step 3: If no internal info found, try external fact finding
+    if (internalResponse === "NO_INTERNAL_INFO_FOUND") {
       const externalFactFindingResultTemp = await runner.run(
         externalFactFinding,
         [...conversationHistory]
@@ -231,20 +267,10 @@ export const runWorkflow = async (workflow: WorkflowInput): Promise<string> => {
         throw new Error("Agent result is undefined");
       }
 
-      finalResponse = externalFactFindingResultTemp.finalOutput;
-    } else {
-      const agentResultTemp = await runner.run(
-        agent,
-        [...conversationHistory]
-      );
-
-      if (!agentResultTemp.finalOutput) {
-        throw new Error("Agent result is undefined");
-      }
-
-      finalResponse = agentResultTemp.finalOutput;
+      return externalFactFindingResultTemp.finalOutput;
     }
 
-    return finalResponse;
+    // Step 4: Return internal response if found
+    return internalResponse;
   });
 };

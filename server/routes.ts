@@ -2,19 +2,30 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { runWorkflow } from "./openai-agent";
 
+interface ChatMessage {
+  content: string;
+  isUser: boolean;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // API route to get agent response (client handles message storage)
   app.post("/api/chat", async (req, res) => {
     try {
-      const { message } = req.body;
+      const { message, history } = req.body;
 
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
       }
 
-      // Get response from OpenAI agent
+      // Extract last 10 interactions (20 messages: 10 user + 10 bot)
+      const conversationHistory: ChatMessage[] = history 
+        ? history.slice(-20) 
+        : [];
+
+      // Get response from OpenAI agent with conversation history
       const agentResponse = await runWorkflow({ 
-        input_as_text: message
+        input_as_text: message,
+        history: conversationHistory
       });
 
       res.json({ response: agentResponse });

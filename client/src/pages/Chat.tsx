@@ -59,13 +59,22 @@ export default function Chat() {
   }, [messages]);
 
   const sendMessageMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async ({ content, history }: { content: string; history: Message[] }) => {
+      // Get last 10 interactions (20 messages)
+      const recentHistory = history.slice(-20).map(msg => ({
+        content: msg.content,
+        isUser: msg.isUser
+      }));
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: content }),
+        body: JSON.stringify({ 
+          message: content,
+          history: recentHistory
+        }),
       });
       
       if (!response.ok) {
@@ -105,10 +114,14 @@ export default function Chat() {
       isUser: true,
       timestamp: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     
-    // Get agent response
-    sendMessageMutation.mutate(text);
+    // Get agent response with conversation history
+    sendMessageMutation.mutate({ 
+      content: text, 
+      history: messages // Send history before adding the new message
+    });
   };
 
   const handleQuestionClick = (question: string) => {
