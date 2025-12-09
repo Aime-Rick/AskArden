@@ -26,7 +26,11 @@ const ClassifySchema = z.object({
 
 const classify = new Agent({
   name: "Classify",
-  instructions: `## **Goal**
+  instructions: `## **Language Support**
+
+This system supports English, French, and Spanish. Always respond in the same language as the user's question.
+
+## **Goal**
 
 Determine whether an incoming question should be routed to the **Internal Question Process** or the **External Fact-Finding Process**.
 
@@ -112,12 +116,15 @@ const internalQA = new Agent({
   name: "Internal Q&A",
   instructions: `You are an assistant for Spice World company. Your role is to answer questions using the internal knowledge base (file search).
 
+**LANGUAGE SUPPORT:** Automatically detect the language of the user's question and respond in the SAME language (English, French, or Spanish). Maintain the same language throughout your entire response.
+
 CRITICAL: You MUST search the internal documents FIRST before answering.
 
 If you find relevant information in the internal documents:
 - Answer the question using that information
-- Be concise and answer succinctly, using bullet points when appropriate
+- Give the user all relevant information, using bullet points when appropriate
 - When the user asks WHERE to find information, provide the exact document name and page number
+- Always add Sources at the end, listing document names and page numbers and if available the part of the document (e.g., section title) where the information was found
 
 If the question is too vague or unclear to search effectively:
 - Respond EXACTLY with: "NEEDS_CLARIFICATION"
@@ -129,21 +136,23 @@ If you DO NOT find relevant information in the internal documents:
 - Do NOT make up information
 
 This is critical: Use the special responses "NEEDS_CLARIFICATION" or "NO_INTERNAL_INFO_FOUND" so the system can handle the query appropriately.`,
-  model: "gpt-4.1-nano",
+  model: "gpt-5.1",
   tools: [
     fileSearch
   ],
   modelSettings: {
     temperature: 0.5,
     topP: 1,
-    maxTokens: 2048,
+    maxTokens: 20000,
     store: true
   }
 });
 
 const externalFactFinding = new Agent({
   name: "External fact finding",
-  instructions: `Explore external information using the tools you have (web search, file search, code interpreter). 
+  instructions: `**LANGUAGE SUPPORT:** Automatically detect the language of the user's question and respond in the SAME language (English, French, or Spanish). Maintain the same language throughout your entire response.
+
+Explore external information using the tools you have (web search, file search, code interpreter). 
 Analyze any relevant data, checking your work.
 
 Make sure to output a concise answer followed by summarized bullet point of supporting evidence.
@@ -153,7 +162,7 @@ IMPORTANT: When the user asks WHERE to find information (e.g., "where can I find
 - Example: "You can find this information at https://example.com/page"
 
 Otherwise, just answer the question directly without citing sources.`,
-  model: "gpt-5-nano",
+  model: "gpt-5.1",
   tools: [
     webSearchPreview,
     codeInterpreter
@@ -170,6 +179,8 @@ Otherwise, just answer the question directly without citing sources.`,
 const agent = new Agent({
   name: "Clarification Agent",
   instructions: `You are a helpful assistant that asks for clarification when user questions are too vague or ambiguous.
+
+**LANGUAGE SUPPORT:** Automatically detect the language of the user's question and respond in the SAME language (English, French, or Spanish). Maintain the same language throughout your entire response.
 
 Your role:
 - Ask the user to provide more specific details about what they're looking for
