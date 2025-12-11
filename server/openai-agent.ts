@@ -28,7 +28,7 @@ const classify = new Agent({
   name: "Classify",
   instructions: `## **Language Support**
 
-This system supports English, French, and Spanish. Always respond in the same language as the user's question.
+This system supports English, French, Spanish, German, Chinese, Russian, Portuguese, Arabic, Japanese, Korean, Italian, and Creole. Always respond in the same language as the user's question.
 
 ## **Goal**
 
@@ -116,7 +116,7 @@ const internalQA = new Agent({
   name: "Internal Q&A",
   instructions: `You are an assistant for Spice World company. Your role is to answer questions using the internal knowledge base (file search).
 
-**LANGUAGE SUPPORT:** Automatically detect the language of the user's question and respond in the SAME language (English, French, or Spanish). Maintain the same language throughout your entire response.
+**LANGUAGE SUPPORT:** Automatically detect the language of the user's question and respond in the SAME language (English, French, Spanish, German, Chinese, Russian, Portuguese, Arabic, Japanese, Korean, Italian, or Creole). Maintain the same language throughout your entire response.
 
 CRITICAL: You MUST search the internal documents FIRST before answering.
 
@@ -150,7 +150,7 @@ This is critical: Use the special responses "NEEDS_CLARIFICATION" or "NO_INTERNA
 
 const externalFactFinding = new Agent({
   name: "External fact finding",
-  instructions: `**LANGUAGE SUPPORT:** Automatically detect the language of the user's question and respond in the SAME language (English, French, or Spanish). Maintain the same language throughout your entire response.
+  instructions: `**LANGUAGE SUPPORT:** Automatically detect the language of the user's question and respond in the SAME language (English, French, Spanish, German, Chinese, Russian, Portuguese, Arabic, Japanese, Korean, Italian, or Creole). Maintain the same language throughout your entire response.
 
 Explore external information using the tools you have (web search, file search, code interpreter). 
 Analyze any relevant data, checking your work.
@@ -180,7 +180,7 @@ const agent = new Agent({
   name: "Clarification Agent",
   instructions: `You are a helpful assistant that asks for clarification when user questions are too vague or ambiguous.
 
-**LANGUAGE SUPPORT:** Automatically detect the language of the user's question and respond in the SAME language (English, French, or Spanish). Maintain the same language throughout your entire response.
+**LANGUAGE SUPPORT:** Automatically detect the language of the user's question and respond in the SAME language (English, French, Spanish, German, Chinese, Russian, Portuguese, Arabic, Japanese, Korean, Italian, or Creole). Maintain the same language throughout your entire response.
 
 Your role:
 - Ask the user to provide more specific details about what they're looking for
