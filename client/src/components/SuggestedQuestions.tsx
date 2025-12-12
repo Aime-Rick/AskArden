@@ -17,7 +17,7 @@ export default function SuggestedQuestions({ onQuestionClick }: SuggestedQuestio
         <Sparkles className="w-10 h-10 text-primary" />
       </div>
       <h2 className="text-xl font-semibold text-foreground mb-2">
-        Welcome to Ask Arden
+        Welcome to Ask HR
       </h2>
       <p className="text-muted-foreground mb-8 text-center max-w-md">
         Your intelligent assistant for all your questions. Select a question or type your own.

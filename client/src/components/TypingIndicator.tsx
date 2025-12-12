@@ -5,7 +5,7 @@ export default function TypingIndicator() {
     <div className="flex gap-3 mb-4" data-testid="typing-indicator">
       <img 
         src={logoUrl} 
-        alt="Ask Arden" 
+        alt="Ask HR" 
         className="w-8 h-8 rounded-full flex-shrink-0"
       />
       <div className="bg-card border-l-[3px] border-l-primary rounded-lg p-4 flex items-center gap-1.5">

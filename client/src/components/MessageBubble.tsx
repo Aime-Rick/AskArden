@@ -21,7 +21,7 @@ export default function MessageBubble({ message, isUser, timestamp }: MessageBub
       {!isUser && (
         <img 
           src={logoUrl} 
-          alt="Ask Arden" 
+          alt="Ask HR" 
           className="w-8 h-8 rounded-full flex-shrink-0"
           data-testid="img-bot-avatar"
         />

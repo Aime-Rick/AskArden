@@ -1,4 +1,4 @@
-# Ask Arden Chatbot - Design Guidelines
+# Ask HR Chatbot - Design Guidelines
 
 ## Design Approach
 **Reference-Based Approach**: Drawing inspiration from modern conversational AI interfaces like ChatGPT, Intercom, and Claude, while maintaining a distinctive personality through the logo's friendly, approachable aesthetic. The water droplet mascot suggests fluidity, helpfulness, and clarity—principles that guide the entire interface design.
@@ -31,7 +31,7 @@
 
 ### Header
 - Fixed top bar with subtle shadow
-- Logo positioned left with "Ask Arden" text (18px semibold)
+- Logo positioned left with "Ask HR" text (18px semibold)
 - Optional status indicator (green dot + "Online")
 - Background: white with border-b
 
@@ -103,4 +103,4 @@
 - High contrast ratios maintained throughout
 - Focus indicators on all interactive elements
 
-This design creates a friendly, professional chat experience that mirrors the approachable personality of the Ask Arden logo while maintaining clarity and usability.
+This design creates a friendly, professional chat experience that mirrors the approachable personality of the Ask HR logo while maintaining clarity and usability.

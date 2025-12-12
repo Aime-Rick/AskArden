@@ -18,7 +18,7 @@ interface AgentResponse {
   response: string;
 }
 
-const STORAGE_KEY = 'askArdenMessages';
+const STORAGE_KEY = 'askHRMessages';
 
 // Load messages from sessionStorage
 const loadMessages = (): Message[] => {

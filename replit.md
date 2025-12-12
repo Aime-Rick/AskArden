@@ -1,8 +1,8 @@
-# Ask Arden Chatbot
+# Ask HR Chatbot
 
 ## Overview
 
-Ask Arden is an AI-powered chatbot application that provides intelligent responses to user questions. The application features a modern conversational interface built with React and Express, leveraging OpenAI's agent framework to deliver context-aware responses. The system uses a multi-agent workflow to classify questions and route them to appropriate knowledge sources, providing concise, helpful answers to users.
+Ask HR is an AI-powered chatbot application that provides intelligent responses to user questions. The application features a modern conversational interface built with React and Express, leveraging OpenAI's agent framework to deliver context-aware responses. The system uses a multi-agent workflow to classify questions and route them to appropriate knowledge sources, providing concise, helpful answers to users.
 
 **Last Updated**: November 18, 2025
 - Integrated new agent version with enhanced classification logic and upgraded models

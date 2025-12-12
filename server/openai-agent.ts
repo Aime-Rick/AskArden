@@ -1,116 +1,9 @@
-import { fileSearchTool, webSearchTool, codeInterpreterTool, Agent, AgentInputItem, Runner, withTrace } from "@openai/agents";
-import { z } from "zod";
+import { fileSearchTool, Agent, AgentInputItem, Runner, withTrace } from "@openai/agents";
 
 // Tool definitions - using the provided vector store ID
 const fileSearch = fileSearchTool([
   "vs_691b2685741881918f7ac84544d45cca"
 ]);
-
-const webSearchPreview = webSearchTool({
-  searchContextSize: "medium",
-  userLocation: {
-    type: "approximate"
-  }
-});
-
-const codeInterpreter = codeInterpreterTool({
-  container: {
-    type: "auto",
-    file_ids: []
-  }
-});
-
-const ClassifySchema = z.object({ 
-  operating_procedure: z.enum(["q-and-a", "fact-finding", "other"]) 
-});
-
-const classify = new Agent({
-  name: "Classify",
-  instructions: `## **Language Support**
-
-This system supports English, French, Spanish, German, Chinese, Russian, Portuguese, Arabic, Japanese, Korean, Italian, and Creole. Always respond in the same language as the user's question.
-
-## **Goal**
-
-Determine whether an incoming question should be routed to the **Internal Question Process** or the **External Fact-Finding Process**.
-
----
-
-## **1. Internal Question Process**
-
-Classify a question as **Internal** when it is about **Spice World**, the company you are building the RAG system for.
-
-A question is considered internal if *any* of the following are true:
-
-### **1.1 Direct Mention of the Company**
-
-* The question explicitly mentions **"Spice World"**.
-
-  * Example: *"What products does Spice World offer?"*
-
-### **1.2 Implicit Mention of the Company**
-
-* The question refers to **"the company"**, **"this company"**, **"our company"**, or similar phrases **while no other company is named**.
-
-  * Example: *"What is the company's refund policy?"*
-* The question assumes context related to Spice World even without naming it.
-
-  * Example: *"Can customers track their orders?"* (Assume about Spice World)
-
-### **1.3 No Company Mentioned but Context Suggests Internal**
-
-If **no company is mentioned**, automatically assume the user is referring to **Spice World**, unless the question is clearly about external/general information.
-
-* Example: *"What departments do we have?"* → Internal
-
----
-
-## **2. External Fact-Finding Process**
-
-Classify a question as **External** when it is **not** about Spice World, nor implied to be about Spice World.
-
-A question is external if:
-
-### **2.1 It is clearly about another company**
-
-* Example: *"What is Amazon's return policy?"*
-
-### **2.2 It requests general world knowledge**
-
-* Example: *"What is the capital of Japan?"*
-* Example: *"How does Kubernetes work?"*
-
-### **2.3 It is personal, technical, or unrelated to the company**
-
-* Example: *"Explain how to train a TTS model."*
-
----
-
-## **3. Edge Cases & Rules**
-
-### **3.1 If there is ANY ambiguity, assume Internal**
-
-This ensures the RAG system prefers internal knowledge unless clearly external.
-
-### **3.2 If multiple companies are mentioned**
-
-Only classify as Internal if **Spice World** is one of them.
-
-### **3.3 If the question compares Spice World with something else**
-
-→ **Internal**
-
-* Example: *"How does Spice World pricing compare to competitors?"*
-`,
-  model: "gpt-4.1-nano",
-  outputType: ClassifySchema,
-  modelSettings: {
-    temperature: 1,
-    topP: 1,
-    maxTokens: 2048,
-    store: true
-  }
-});
 
 const internalQA = new Agent({
   name: "Internal Q&A",
@@ -148,34 +41,6 @@ This is critical: Use the special responses "NEEDS_CLARIFICATION" or "NO_INTERNA
   }
 });
 
-const externalFactFinding = new Agent({
-  name: "External fact finding",
-  instructions: `**LANGUAGE SUPPORT:** Automatically detect the language of the user's question and respond in the SAME language (English, French, Spanish, German, Chinese, Russian, Portuguese, Arabic, Japanese, Korean, Italian, or Creole). Maintain the same language throughout your entire response.
-
-Explore external information using the tools you have (web search, file search, code interpreter). 
-Analyze any relevant data, checking your work.
-
-Make sure to output a concise answer followed by summarized bullet point of supporting evidence.
-
-IMPORTANT: When the user asks WHERE to find information (e.g., "where can I find this?", "what's the source?", "which website?"), you MUST provide:
-- The exact website URL or link where the information was found
-- Example: "You can find this information at https://example.com/page"
-
-Otherwise, just answer the question directly without citing sources.`,
-  model: "gpt-5.1",
-  tools: [
-    webSearchPreview,
-    codeInterpreter
-  ],
-  modelSettings: {
-    reasoning: {
-      effort: "low",
-      summary: "auto"
-    },
-    store: true
-  }
-});
-
 const agent = new Agent({
   name: "Clarification Agent",
   instructions: `You are a helpful assistant that asks for clarification when user questions are too vague or ambiguous.
@@ -206,7 +71,7 @@ type WorkflowInput = {
 
 // Main code entrypoint
 export const runWorkflow = async (workflow: WorkflowInput): Promise<string> => {
-  return await withTrace("Ask Arden", async () => {
+  return await withTrace("Ask HR", async () => {
     // Build conversation history from previous messages
     const conversationHistory: AgentInputItem[] = [];
     
@@ -241,7 +106,7 @@ export const runWorkflow = async (workflow: WorkflowInput): Promise<string> => {
       }
     });
 
-    // Step 1: Always try internal Q&A first
+    // Step 1: Try internal Q&A
     const internalQAResultTemp = await runner.run(
       internalQA,
       [...conversationHistory]
@@ -267,18 +132,9 @@ export const runWorkflow = async (workflow: WorkflowInput): Promise<string> => {
       return clarificationResultTemp.finalOutput;
     }
 
-    // Step 3: If no internal info found, try external fact finding
+    // Step 3: If no internal info found, return polite message
     if (internalResponse === "NO_INTERNAL_INFO_FOUND") {
-      const externalFactFindingResultTemp = await runner.run(
-        externalFactFinding,
-        [...conversationHistory]
-      );
-
-      if (!externalFactFindingResultTemp.finalOutput) {
-        throw new Error("Agent result is undefined");
-      }
-
-      return externalFactFindingResultTemp.finalOutput;
+      return "Sorry, I cannot answer that question. The information you're looking for is not available in our knowledge base.";
     }
 
     // Step 4: Return internal response if found
