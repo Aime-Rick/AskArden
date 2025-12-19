@@ -87,7 +87,7 @@ export default function ChatInput({ onSendMessage, disabled = false, messages = 
           </Button>
         </form>
         
-        {/* <div className="mt-3 flex justify-center">
+        <div className="mt-3 flex justify-center">
           <Button
             type="button"
             variant="outline"
@@ -99,7 +99,7 @@ export default function ChatInput({ onSendMessage, disabled = false, messages = 
             <Mail className="w-4 h-4" />
             Still have questions? Submit a ticket to HR
           </Button>
-        </div> */}
+        </div>
       </div>
     </div>
   );

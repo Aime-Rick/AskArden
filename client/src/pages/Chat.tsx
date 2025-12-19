@@ -163,7 +163,7 @@ export default function Chat() {
       <ChatInput 
         onSendMessage={handleSendMessage} 
         disabled={sendMessageMutation.isPending}
-        // messages={messages}
+        messages={messages}
       />
     </div>
   );
