@@ -23,8 +23,8 @@ export default function ChatInput({ onSendMessage, disabled = false, messages = 
   const handleHRTicket = () => {
     const conversationHistory = messages
       .map((msg, index) => {
-        const role = msg.isUser ? "You" : "AskArden AI";
-        return `${index + 1}. ${role}:\n${msg.content}\n`;
+        const role = msg.isUser ? "You" : "Ask HR Assistant";
+        return `${role}: ${msg.content}\n`;
       })
       .join("\n");
 
