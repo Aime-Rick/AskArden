@@ -139,5 +139,5 @@ export const runWorkflow = async (workflow: WorkflowInput): Promise<string> => {
 
     // Step 4: Return internal response if found
     return internalResponse;
-  });
+  }); 
 };
